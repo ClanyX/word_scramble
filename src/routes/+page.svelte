@@ -49,6 +49,7 @@
     }
 
     function prepareDefinition(){
+        definitionCount = 0;
         for(let i = 0; i < definition.length; i++){
             definition[i] = definition[i].definition;
         }
@@ -59,7 +60,15 @@
     let definitionExport;
     
     function changeDefinition(num){
-        definitionExport = definition[num];
+        if(num >= 0){
+            if(definition[num] !== undefined){
+                definitionExport = definition[num];
+            } else {
+                definitionCount = definition.length - 1;
+            }
+        } else {
+            definitionCount = 0;
+        }
     }
     $: changeDefinition(definitionCount);
 
