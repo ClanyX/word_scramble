@@ -2,6 +2,7 @@
     import { error } from "@sveltejs/kit";
     import { Button } from "@sveltestrap/sveltestrap";
     import { get } from "svelte/store";
+    import HintButton from "./HintButton.svelte";
 
     const alfabet = "abcdefghijklmnopqrstuvwxyz";
     const alfabetArray = alfabet.split("");
@@ -106,11 +107,18 @@
             input.style.backgroundColor = 'transparent';
         });
     }
+
+    function onHintClick(){
+        const randomIndex = Math.floor(Math.random() * letters.length);
+        const inputs = document.querySelectorAll('input');
+        inputs[randomIndex].value = letters[randomIndex];
+    }
 </script>
 
 <div>
     <h1 class="text-center mt-5">Guess the word</h1>
     <div>Your score: {score}</div>
+    <HintButton {onHintClick}/>
     <form id="form" class="d-flex justify-content-center align-items-center flex-column" style="height: 60vh;">
         <div class="justify-content-center align-items-center">
             <button class="btn btn-secondary" onclick={() => definitionCount--}>←</button>
