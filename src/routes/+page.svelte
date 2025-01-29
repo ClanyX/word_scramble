@@ -2,20 +2,27 @@
     import { error } from "@sveltejs/kit";
     import { Button } from "@sveltestrap/sveltestrap";
     import { get } from "svelte/store";
+    import { onMount } from "svelte";
     import HintButton from "./HintButton.svelte";
 
     const alfabet = "abcdefghijklmnopqrstuvwxyz";
     const alfabetArray = alfabet.split("");
 
-    let letters = getWord();
+    let letters = [];
     let definition = [];
+    let inputValue = '';
+    let submitBtn;
+    let statusText;
+
+    onMount(() => {
+        getWord();
+    });
 
     let score = 0;
 
     function getWord() {
-        //get random word
-        let randomLetter = alfabetArray[Math.floor(Math.random() * alfabetArray.length)];
-        fetch(`https://api.datamuse.com/words?sp=${randomLetter}*`)
+       //get random word
+       fetch(`https://random-word-api.herokuapp.com/word?number=1`)
             .then((response) => {
                 if(!response.ok){
                     throw new Error('Network response was not ok. Status: ' + response.status);
@@ -23,7 +30,7 @@
                 return response.json();
             })
             .then((values) => {
-                const randomWord = values[Math.floor(Math.random() * values.length)].word;
+                const randomWord = values[0];
                 letters = randomWord.toUpperCase().split('');
                 getDefinition();
                 //delete this
@@ -37,6 +44,7 @@
         fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${letters.join('')}`)
             .then(response => {
                 if(!response.ok){
+                    getWord();
                     throw new Error('Network response was not ok Status: ' + response.status);
                 }
                 return response.json();
@@ -90,13 +98,32 @@
                 return input.readOnly;
             });
             if(allReadOnly){
-                resetForm();
-                getWord();
-                alert('You won! Correct word is: ' + letters.join(''));
+                statusText = `Correct! ${letters.join('')}`;
                 score++;
             }
             index++;
         });
+    }
+
+
+    function checkWord(e, index){
+        if(statusText){
+            return;
+        }
+        const input = e.target;
+        if(input.value.toUpperCase() === letters[index]){
+                input.style.backgroundColor = 'green';
+                input.readOnly = true;
+        } else {
+                input.style.backgroundColor = 'red';
+        }
+        if(index >= letters.length - 1){
+            submitBtn.focus();
+            scanWord();
+        } else{
+            const nextInput = document.querySelector(`input[data-index="${index + 1}"]`);
+            nextInput.focus();
+        }
     }
 
     function resetForm(){
@@ -106,6 +133,8 @@
             input.readOnly = false;
             input.style.backgroundColor = 'transparent';
         });
+        statusText = '';
+        getWord();
     }
 
     function onHintClick(){
@@ -119,6 +148,10 @@
     <h1 class="text-center mt-5">Guess the word</h1>
     <div>Your score: {score}</div>
     <HintButton {onHintClick}/>
+    {#if statusText}
+        <div>{statusText}</div>
+        <button class="btn btn-secondary" onclick={() => resetForm()}>Next word</button>
+    {/if}
     <form id="form" class="d-flex justify-content-center align-items-center flex-column" style="height: 60vh;">
         <div class="justify-content-center align-items-center">
             <button class="btn btn-secondary" onclick={() => definitionCount--}>←</button>
@@ -126,11 +159,11 @@
             <button class="btn btn-secondary" onclick={() => definitionCount++}>→</button>
         </div>
         <div class="outputText mb-5">
-            {#each letters as letter}
-                <input type="text" maxlength="1"/>
+            {#each letters as letter, index (letter + index)}
+                <input type="text" data-index={index} oninput={(e) => checkWord(e, index)} maxlength="1"/>
             {/each}
         </div>
-        <button id="resetForm" class="btn btn-secondary" onclick={scanWord}>Submit</button>
+        <button bind:this={submitBtn} class="btn btn-secondary" onclick={scanWord}>Submit</button>
     </form>
 </div>
 
