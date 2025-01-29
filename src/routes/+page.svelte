@@ -22,7 +22,7 @@
 
     function getWord() {
        //get random word
-       fetch(`https://random-word-api.herokuapp.com/word?number=1`)
+       return fetch(`https://random-word-api.herokuapp.com/word?number=1`)
             .then((response) => {
                 if(!response.ok){
                     throw new Error('Network response was not ok. Status: ' + response.status);
@@ -99,12 +99,10 @@
             });
             if(allReadOnly){
                 statusText = `Correct! ${letters.join('')}`;
-                score++;
             }
             index++;
         });
     }
-
 
     function checkWord(e, index){
         if(statusText){
@@ -117,24 +115,43 @@
         } else {
                 input.style.backgroundColor = 'red';
         }
-        if(index >= letters.length - 1){
+        if (input.value === '') {
+            input.focus();
+            event.preventDefault();
+        } else if (index >= letters.length - 1) {
             submitBtn.focus();
             scanWord();
-        } else{
+        } else {
             const nextInput = document.querySelector(`input[data-index="${index + 1}"]`);
             nextInput.focus();
         }
     }
 
+    //tohle moc nefunguje (potrebuju zmenit barvu kdyz se to smaze na transparent)
+    function inputPress(e, index){
+        if (e?.key === 'Backspace') {
+            const prevInput = document.querySelector(`input[data-index="${index - 1}"]`);
+            if (prevInput) {
+                prevInput.focus();
+            }
+            e.target.value = '';
+        }
+    }
+
     function resetForm(){
         document.getElementById('form').reset();
-        const inputs = document.querySelectorAll('input');
-        inputs.forEach(input => {
-            input.readOnly = false;
-            input.style.backgroundColor = 'transparent';
-        });
         statusText = '';
-        getWord();
+        score++;
+        getWord().then(() => {
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach((input, index) => {
+                input.readOnly = false;
+                if(index === 0){
+                    input.focus();
+                }
+                input.style.backgroundColor = 'transparent';
+            });
+        });
     }
 
     function onHintClick(){
@@ -160,7 +177,7 @@
         </div>
         <div class="outputText mb-5">
             {#each letters as letter, index (letter + index)}
-                <input type="text" data-index={index} oninput={(e) => checkWord(e, index)} maxlength="1"/>
+                <input type="text" onkeydown={(e) => inputPress(e, index)} data-index={index} oninput={(e) => checkWord(e, index)} maxlength="1"/>
             {/each}
         </div>
         <button bind:this={submitBtn} class="btn btn-secondary" onclick={scanWord}>Submit</button>
@@ -173,6 +190,7 @@
     }
 
     .outputText input {
+        user-select: all;
         width: 5rem;
         border: none;
         outline: none;
