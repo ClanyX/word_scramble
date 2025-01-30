@@ -2,14 +2,19 @@
     import { error } from "@sveltejs/kit";
     import { Button } from "@sveltestrap/sveltestrap";
     import { get } from "svelte/store";
-    import { onMount } from "svelte";
+    import { getAllContexts, onMount } from "svelte";
     import HintButton from "./HintButton.svelte";
 
     let letters = [];
     let definition = [];
     let inputValue = '';
-    let submitBtn;
     let statusText;
+    let resetBtn;
+
+    //change the definition
+    let definitionCount = 0;
+    let definitionExport;
+    $: definitionExport = definition[definitionCount];
 
     let score = 0;
 
@@ -48,57 +53,12 @@
             })
             .then(data => {
                 definition = data[0].meanings[0].definitions;
-                prepareDefinition();
-                changeDefinition(definitionCount);
+                for(let i = 0; i < definition.length; i++){
+                    definition[i] = definition[i].definition;
+                }
+                definitionExport = definition[definitionCount];
             })
             .catch(error => {console.error('Error: ', error)});
-    }
-
-    function prepareDefinition(){
-        definitionCount = 0;
-        for(let i = 0; i < definition.length; i++){
-            definition[i] = definition[i].definition;
-        }
-    }
-
-    //change the definition
-    let definitionCount = 0;
-    let definitionExport;
-    
-    function changeDefinition(num){
-        if(num >= 0){
-            if(definition[num] !== undefined){
-                definitionExport = definition[num];
-            } else {
-                definitionCount = definition.length - 1;
-            }
-        } else {
-            definitionCount = 0;
-        }
-    }
-    $: changeDefinition(definitionCount);
-
-    function scanWord(){
-        const inputs = document.querySelectorAll('input');
-        let index = 0;
-        inputs.forEach(input => {
-            //check if one input is correct
-            if(input.value.toUpperCase() === letters[index]){
-                input.style.backgroundColor = 'green';
-                input.readOnly = true;
-            } else {
-                input.style.backgroundColor = 'red';
-            }
-
-            //check if all inputs are correct
-            const allReadOnly = Array.prototype.every.call(inputs, (input) => {
-                return input.readOnly;
-            });
-            if(allReadOnly){
-                statusText = `Correct! ${letters.join('')}`;
-            }
-            index++;
-        });
     }
 
     function checkWord(e, index){
@@ -107,31 +67,41 @@
         }
         const input = e.target;
         if(input.value.toUpperCase() === letters[index]){
-                input.style.backgroundColor = 'green';
-                input.readOnly = true;
+            input.style.backgroundColor = 'green';
+            input.readOnly = true;
+        }else if(input.value === undefined || input.value === null || input.value === ''){
+            input.style.backgroundColor = 'transparent';
         } else {
-                input.style.backgroundColor = 'red';
+            input.style.backgroundColor = 'red';
         }
+
         if (input.value === '') {
             input.focus();
             event.preventDefault();
         } else if (index >= letters.length - 1) {
-            submitBtn.focus();
-            scanWord();
+            
         } else {
             const nextInput = document.querySelector(`input[data-index="${index + 1}"]`);
             nextInput.focus();
         }
+        
+        const inputs = document.querySelectorAll('input');
+        const allReadOnly = Array.prototype.every.call(inputs, (input) => {
+            return input.readOnly;
+        });
+        if(allReadOnly){
+            statusText = `Correct! ${letters.join('')}`;
+            setTimeout(() => resetBtn.focus(), 100);
+        }
     }
 
-    //tohle moc nefunguje (potrebuju zmenit barvu kdyz se to smaze na transparent)
     function inputPress(e, index){
         if (e?.key === 'Backspace') {
             const prevInput = document.querySelector(`input[data-index="${index - 1}"]`);
-            if (prevInput) {
+            if (prevInput && prevInput.readOnly === false) {
                 prevInput.focus();
+                e.target.value = '';
             }
-            e.target.value = '';
         }
     }
 
@@ -153,8 +123,13 @@
 
     function onHintClick(){
         const randomIndex = Math.floor(Math.random() * letters.length);
+        if(document.querySelector(`input[data-index="${randomIndex}"]`).readOnly){
+            onHintClick();
+            return;
+        }
         const inputs = document.querySelectorAll('input');
         inputs[randomIndex].value = letters[randomIndex];
+        checkWord({target: inputs[randomIndex]}, randomIndex);
     }
 </script>
 
@@ -164,21 +139,23 @@
     <HintButton {onHintClick}/>
     {#if statusText}
         <div>{statusText}</div>
-        <button class="btn btn-secondary" onclick={() => resetForm()}>Next word</button>
+        <button bind:this={resetBtn} class="btn btn-secondary" onclick={() => resetForm()}>Next word</button>
     {/if}
     <form id="form" class="d-flex justify-content-center align-items-center flex-column" style="height: 60vh;">
         <div class="justify-content-center align-items-center">
-
-            <button class="btn btn-secondary" onclick={() => definitionCount--}>←</button>
-            {definitionExport}
-            <button class="btn btn-secondary" onclick={() => definitionCount++}>→</button>
+            {#if definitionCount > 0}
+                <button class="btn btn-secondary" onclick={() => definitionCount--}>←</button>
+            {/if}
+                {definitionExport}
+            {#if definitionCount < definition.length - 1}
+                <button class="btn btn-secondary" onclick={() => definitionCount++}>→</button>
+            {/if}
         </div>
         <div class="outputText mb-5">
             {#each letters as letter, index (letter + index)}
                 <input type="text" onkeydown={(e) => inputPress(e, index)} data-index={index} oninput={(e) => checkWord(e, index)} maxlength="1"/>
             {/each}
         </div>
-        <button bind:this={submitBtn} class="btn btn-secondary" onclick={scanWord}>Submit</button>
     </form>
 </div>
 
