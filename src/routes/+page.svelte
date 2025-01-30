@@ -65,6 +65,7 @@
         if(statusText){
             return;
         }
+        //check if one letter is correct
         const input = e.target;
         if(input.value.toUpperCase() === letters[index]){
             input.style.backgroundColor = 'green';
@@ -75,6 +76,7 @@
             input.style.backgroundColor = 'red';
         }
 
+        //input focussing
         if (input.value === '') {
             input.focus();
             event.preventDefault();
@@ -85,6 +87,7 @@
             nextInput.focus();
         }
         
+        //check if all letters are correct
         const inputs = document.querySelectorAll('input');
         const allReadOnly = Array.prototype.every.call(inputs, (input) => {
             return input.readOnly;
