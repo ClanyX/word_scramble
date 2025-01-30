@@ -123,8 +123,13 @@
 
     function onHintClick(){
         const randomIndex = Math.floor(Math.random() * letters.length);
+        if(document.querySelector(`input[data-index="${randomIndex}"]`).readOnly){
+            onHintClick();
+            return;
+        }
         const inputs = document.querySelectorAll('input');
         inputs[randomIndex].value = letters[randomIndex];
+        checkWord({target: inputs[randomIndex]}, randomIndex);
     }
 </script>
 
