@@ -5,24 +5,21 @@
     import { onMount } from "svelte";
     import HintButton from "./HintButton.svelte";
 
-    const alfabet = "abcdefghijklmnopqrstuvwxyz";
-    const alfabetArray = alfabet.split("");
-
     let letters = [];
     let definition = [];
     let inputValue = '';
     let submitBtn;
     let statusText;
 
+    let score = 0;
+
     onMount(() => {
         getWord();
     });
 
-    let score = 0;
-
     function getWord() {
        //get random word
-       return fetch(`https://random-word-api.herokuapp.com/word?number=1`)
+       return fetch(`https://random-word-api.vercel.app/api?words=1`)
             .then((response) => {
                 if(!response.ok){
                     throw new Error('Network response was not ok. Status: ' + response.status);
@@ -171,6 +168,7 @@
     {/if}
     <form id="form" class="d-flex justify-content-center align-items-center flex-column" style="height: 60vh;">
         <div class="justify-content-center align-items-center">
+
             <button class="btn btn-secondary" onclick={() => definitionCount--}>←</button>
             {definitionExport}
             <button class="btn btn-secondary" onclick={() => definitionCount++}>→</button>
